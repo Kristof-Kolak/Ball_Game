@@ -29,10 +29,20 @@ impl Ball{
 
     fn wall_contact(&mut self, width: f32, height:f32){
         if (self.x - self.r < 0.0 && self.vel_x < 0.0) || (self.x + self.r > width && self.vel_x > 0.0){
+            if self.x - self.r < 0.0{
+                self.x = self.r
+            }else if self.x + self.r > width{
+                self.x = width - self.r;
+            }
             self.vel_x = -self.vel_x;
             self.color = RED;
         }
         if (self.y - self.r < 0.0 && self.vel_y < 0.0) || (self.y + self.r > height && self.vel_y > 0.0){
+            if self.y + self.r > height{
+                self.y = height - self.r;
+            }else if self.y - self.r < 0.0{
+                self.y = self.r;
+            }
             self.vel_y = -self.vel_y;
             self.color = BLUE;
         }   
@@ -60,6 +70,15 @@ fn contact_details(a: &mut Ball, b: &mut Ball) -> Option<f32>{
         a.y += ny * overlap / 2.0;
         b.x -= nx * overlap / 2.0;
         b.y -= ny * overlap / 2.0;
+        let rel = (a.vel_x - b.vel_x) * nx + (a.vel_y - b.vel_y) * ny;
+        if rel < 0.0{
+            let delta_a = (b.vel_x * nx + b.vel_y * ny) - (a.vel_x * nx + a.vel_y * ny);
+            let delta_b = (a.vel_x * nx + a.vel_y * ny) - (b.vel_x * nx + b.vel_y * ny);
+            a.vel_x += delta_a * nx;
+            a.vel_y += delta_a * ny;
+            b.vel_x += delta_b * nx;
+            b.vel_y += delta_b * ny;
+        }
         Some(overlap)
     }else{
         None
@@ -72,7 +91,7 @@ fn detect_collision(balls: &mut Vec<Ball>){
             let (left, right) = balls.split_at_mut(j);
             let ball_a = &mut left[i];
             let ball_b = &mut right[0];
-            if let Some(overlap) = contact_details(ball_a, ball_b) {
+            if let Some(_) = contact_details(ball_a, ball_b) {
                 ball_a.color = GREEN;
                 ball_b.color = GREEN; 
             }
@@ -87,7 +106,7 @@ async fn main() {
 
     let mut balls: Vec<Ball> = Vec::new();
 
-    let ball_count = 200;
+    let ball_count = 50;
     for _ in 0..ball_count{
         let x = gen_range(radius, (screen_width() as i32) - radius) as f32;
         let y = gen_range(radius, (screen_height() as i32) - radius) as f32;
