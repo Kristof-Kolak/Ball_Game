@@ -43,13 +43,26 @@ impl Ball{
 
 }
 
-fn is_contact(a: &Ball, b: &Ball) -> bool{
+fn contact_details(a: &mut Ball, b: &mut Ball) -> Option<f32>{
     let dx = a.x - b.x;
     let dy = a.y - b.y;
-    if (dx*dx) + (dy*dy) <= (a.r + b.r) * (a.r + b.r){
-        true
+    let dist_sq = (dx*dx)+(dy*dy);
+    let radius_sum = a.r + b.r;
+    if dist_sq <= radius_sum * radius_sum{
+        let distance = dist_sq.sqrt();
+        let  overlap = radius_sum -  distance;
+        if distance == 0.0{
+            return Some(overlap)
+        }
+        let nx = dx / distance;
+        let ny = dy / distance;
+        a.x += nx * overlap / 2.0;
+        a.y += ny * overlap / 2.0;
+        b.x -= nx * overlap / 2.0;
+        b.y -= ny * overlap / 2.0;
+        Some(overlap)
     }else{
-        false
+        None
     }
 }
 
@@ -59,10 +72,9 @@ fn detect_collision(balls: &mut Vec<Ball>){
             let (left, right) = balls.split_at_mut(j);
             let ball_a = &mut left[i];
             let ball_b = &mut right[0];
-            
-            if is_contact(ball_a, ball_b){
+            if let Some(overlap) = contact_details(ball_a, ball_b) {
                 ball_a.color = GREEN;
-                ball_b.color = GREEN;
+                ball_b.color = GREEN; 
             }
         }
     }
@@ -71,11 +83,11 @@ fn detect_collision(balls: &mut Vec<Ball>){
 #[macroquad::main("MyGame")]
 async fn main() {
 
-    let radius = 50;
+    let radius = 10;
 
     let mut balls: Vec<Ball> = Vec::new();
 
-    let ball_count = 2;
+    let ball_count = 200;
     for _ in 0..ball_count{
         let x = gen_range(radius, (screen_width() as i32) - radius) as f32;
         let y = gen_range(radius, (screen_height() as i32) - radius) as f32;
