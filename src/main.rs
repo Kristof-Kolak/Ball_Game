@@ -53,7 +53,7 @@ impl Ball{
 
 }
 
-fn contact_details(a: &mut Ball, b: &mut Ball) -> Option<f32>{
+fn resolve_contact(a: &mut Ball, b: &mut Ball) -> Option<f32>{
     let dx = a.x - b.x;
     let dy = a.y - b.y;
     let dist_sq = (dx*dx)+(dy*dy);
@@ -72,8 +72,10 @@ fn contact_details(a: &mut Ball, b: &mut Ball) -> Option<f32>{
         b.y -= ny * overlap / 2.0;
         let rel = (a.vel_x - b.vel_x) * nx + (a.vel_y - b.vel_y) * ny;
         if rel < 0.0{
-            let delta_a = (b.vel_x * nx + b.vel_y * ny) - (a.vel_x * nx + a.vel_y * ny);
-            let delta_b = (a.vel_x * nx + a.vel_y * ny) - (b.vel_x * nx + b.vel_y * ny);
+            let v_an = a.vel_x * nx + a.vel_y * ny;
+            let v_bn = b.vel_x * nx + b.vel_y * ny;
+            let delta_a = v_bn - v_an;
+            let delta_b = v_an - v_bn;
             a.vel_x += delta_a * nx;
             a.vel_y += delta_a * ny;
             b.vel_x += delta_b * nx;
@@ -91,7 +93,7 @@ fn detect_collision(balls: &mut Vec<Ball>){
             let (left, right) = balls.split_at_mut(j);
             let ball_a = &mut left[i];
             let ball_b = &mut right[0];
-            if let Some(_) = contact_details(ball_a, ball_b) {
+            if let Some(_) = resolve_contact(ball_a, ball_b) {
                 ball_a.color = GREEN;
                 ball_b.color = GREEN; 
             }
@@ -102,6 +104,7 @@ fn detect_collision(balls: &mut Vec<Ball>){
 #[macroquad::main("MyGame")]
 async fn main() {
 
+    let mut is_paused = false;
     let radius = 10;
 
     let mut balls: Vec<Ball> = Vec::new();
@@ -121,25 +124,27 @@ async fn main() {
 
     loop {
 
-        for ball in balls.iter_mut(){
-            ball.color = YELLOW;
-        }
+
         
+        if is_key_pressed(KeyCode::Space){
+            is_paused = !is_paused;
+        }
 
         clear_background(BLACK);
-        let delta_t = get_frame_time();
+        if !is_paused{
+            for ball in balls.iter_mut(){
+                ball.color = YELLOW;
+            }
+            let delta_t = get_frame_time();
+            let screen_width = screen_width();
+            let screen_height = screen_height();
 
-        let screen_width = screen_width();
-        let screen_height = screen_height();
-
-        
-        
-        for ball in balls.iter_mut(){
-            ball.update(delta_t);
-            ball.wall_contact(screen_width, screen_height);
+            for ball in balls.iter_mut(){
+                ball.update(delta_t);
+                ball.wall_contact(screen_width, screen_height);
+            }
+            detect_collision(&mut balls);
         }
-        detect_collision(&mut balls);
-        
         for ball in balls.iter_mut(){
             ball.draw(ball.color);
         }
